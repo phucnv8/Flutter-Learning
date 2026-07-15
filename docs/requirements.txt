@@ -1,0 +1,4 @@
+# Dependencies để build website giáo trình (MkDocs). Pin version để build ổn định.
+mkdocs==1.6.1
+mkdocs-material==9.5.44
+pymdown-extensions==10.11.2

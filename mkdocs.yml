@@ -1,0 +1,85 @@
+# =============================================================================
+# MkDocs — build giáo trình trong docs/ thành website tĩnh, deploy qua GitLab Pages
+# Theme: Material for MkDocs (miễn phí, có search, dark mode, mục lục).
+# Build local:  pip install -r docs/requirements.txt && mkdocs serve
+# =============================================================================
+site_name: Flutter & Dart Course — Knowledge Base
+site_description: Khóa học Flutter/Dart nội bộ theo mô hình peer-learning
+docs_dir: docs
+# GitLab Pages phục vụ tại https://<group>.<pages-domain>/<project>/
+# use_directory_urls=false giúp link .md hoạt động ổn khi hosting dưới subpath.
+use_directory_urls: false
+
+theme:
+  name: material
+  language: vi
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Chuyển sang nền tối
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Chuyển sang nền sáng
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+
+plugins:
+  - search:
+      lang: vi
+
+# Điều hướng site. Các file governance ở gốc repo được CI copy vào docs/ khi build
+# (xem job "pages" trong .gitlab-ci.yml) nên tham chiếu tới chúng ở cấp docs/.
+nav:
+  - Trang chủ: index.md
+  - Bắt đầu: 00-getting-started.md
+  - Lộ trình học: ROADMAP.md
+  - Giáo trình:
+      - Tổng quan: curriculum/README.md
+      - Module 01 — Dart Fundamentals: curriculum/module-01-dart-fundamentals.md
+  - Hướng dẫn:
+      - Cài môi trường: guides/environment-setup.md
+      - Nộp bài & chấm điểm: guides/submission-and-grading.md
+      - Tương tác & thảo luận: guides/collaboration.md
+      - Labels & Boards: guides/labels-and-boards.md
+      - Module Owners: guides/module-owners.md
+      - Setup repo (Maintainer): guides/repo-setup-checklist.md
+      - Website (Pages + MkDocs): guides/pages-and-mkdocs.md
+  - Chuẩn & tham chiếu:
+      - Coding Standards: standards/coding-standards.md
+      - Review Rubric: standards/review-rubric.md
+      - Glossary: standards/glossary.md
+      - FAQ: standards/faq.md
+  - Luật chơi:
+      - Code of Conduct: CODE_OF_CONDUCT.md
+      - Contributing: CONTRIBUTING.md
+      - Thiết kế tổng thể: DESIGN.md

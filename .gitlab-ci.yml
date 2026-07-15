@@ -1,0 +1,158 @@
+# =============================================================================
+# GitLab CI — Tự động chấm bài tập & kiểm tra giáo trình
+# =============================================================================
+# Pipeline chỉ chạy các job liên quan đến file thay đổi (rules: changes),
+# nên MR nộp bài chạy job chấm bài, MR sửa docs chỉ chạy lint docs.
+#
+# Yêu cầu: GitLab Runner có Docker executor. Dùng image chính thức của Dart/Flutter.
+# Toàn bộ công cụ dưới đây đều MIỄN PHÍ (đi kèm SDK).
+# =============================================================================
+
+stages:
+  - validate      # kiểm tra cấu trúc nộp bài đúng quy ước
+  - format        # dart format
+  - analyze       # dart analyze (lint tĩnh)
+  - test          # dart/flutter test + coverage
+  - docs          # kiểm tra tài liệu
+  - deploy        # build & publish website giáo trình (GitLab Pages)
+
+# --- Cache pub packages để pipeline nhanh hơn -------------------------------
+.cache_pub: &cache_pub
+  cache:
+    key:
+      files:
+        - "**/pubspec.lock"
+    paths:
+      - .pub-cache/
+
+variables:
+  PUB_CACHE: "$CI_PROJECT_DIR/.pub-cache"
+
+# =============================================================================
+# STAGE 1 — VALIDATE: người nộp chỉ được đụng thư mục của chính mình
+# =============================================================================
+validate:submission-structure:
+  stage: validate
+  image: alpine:3.20
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - submissions/**/*
+  before_script:
+    - apk add --no-cache git bash
+  script:
+    - bash ci/validate_submission.sh
+  allow_failure: false
+
+# =============================================================================
+# STAGE 2 — FORMAT: code phải được format chuẩn (dart format)
+# =============================================================================
+check:format:
+  stage: format
+  image: dart:stable
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "submissions/**/*.dart"
+        - "assignments/**/*.dart"
+  script:
+    - echo "Kiểm tra định dạng code..."
+    - dart format --output=none --set-exit-if-changed .
+  allow_failure: false
+
+# =============================================================================
+# STAGE 3 — ANALYZE: lint tĩnh, bắt lỗi tiềm ẩn (dart analyze)
+# =============================================================================
+check:analyze:
+  stage: analyze
+  image: dart:stable
+  <<: *cache_pub
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "submissions/**/*"
+  script:
+    - |
+      # Tìm mọi thư mục bài nộp có pubspec.yaml đã thay đổi và analyze từng cái
+      for dir in $(find submissions -name pubspec.yaml -exec dirname {} \;); do
+        echo "==> Analyzing $dir"
+        (cd "$dir" && dart pub get && dart analyze --fatal-infos --fatal-warnings)
+      done
+  allow_failure: false
+
+# =============================================================================
+# STAGE 4 — TEST: chạy test tự động + coverage (nếu bài tập có test)
+# =============================================================================
+run:tests:
+  stage: test
+  image: dart:stable
+  <<: *cache_pub
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "submissions/**/*"
+  script:
+    - |
+      for dir in $(find submissions -name pubspec.yaml -exec dirname {} \;); do
+        if [ -d "$dir/test" ]; then
+          echo "==> Testing $dir"
+          (cd "$dir" && dart pub get && dart test --reporter=expanded)
+        else
+          echo "==> Bỏ qua $dir (không có thư mục test/)"
+        fi
+      done
+  # Bắt coverage % để hiển thị trên MR (Settings → CI/CD → Test coverage parsing:
+  #   ^\s*lines\.*:\s*(\d+\.\d+)%  hoặc dùng regex phù hợp output của bạn)
+  coverage: '/lines\.*:\s*(\d+\.\d+)%/'
+  allow_failure: false
+
+# =============================================================================
+# STAGE 5 — DOCS: MR sửa giáo trình → kiểm tra markdown & link chết
+# =============================================================================
+check:markdown-links:
+  stage: docs
+  image: node:20-alpine
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "docs/**/*.md"
+        - "*.md"
+  script:
+    - npm install -g markdown-link-check
+    - |
+      find docs -name "*.md" -print0 | while IFS= read -r -d '' f; do
+        echo "==> Checking links in $f"
+        markdown-link-check -q "$f" || true   # cảnh báo, không chặn merge
+      done
+  allow_failure: true
+
+# =============================================================================
+# STAGE 6 — PAGES: build giáo trình (MkDocs) và publish qua GitLab Pages.
+# Job PHẢI tên "pages" và artifact PHẢI nằm ở thư mục "public" (yêu cầu của Pages).
+# Chỉ chạy trên nhánh mặc định (main) → website luôn phản ánh kiến thức đã merge.
+# URL sau khi deploy: Settings → Pages (dạng https://<group>.<domain>/<project>/)
+# =============================================================================
+pages:
+  stage: deploy
+  image: python:3.12-slim
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - "docs/**/*"
+        - "mkdocs.yml"
+        - "*.md"
+  cache:
+    key: mkdocs-pip
+    paths:
+      - .pip-cache/
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  script:
+    - pip install -r docs/requirements.txt
+    - bash docs/build_site.sh build     # tạo thư mục public/
+  artifacts:
+    paths:
+      - public
+  environment:
+    name: pages
+    url: "$CI_PAGES_URL"
