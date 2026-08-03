@@ -138,9 +138,9 @@ class Bird extends Animal with CanFly {
 
 ### 13.6 So sánh `extends`, `implements`, `with`
 
-| | `extends` | `implements` | `with` |
-|---|---|---|---|
-| Số lượng | 1 | Nhiều | Nhiều |
-| Kế thừa code | Có | Không | Có |
-| Kế thừa constructor | Có | Không | Không |
-| Mục đích | Chuyên hóa | Cam kết API | Tái sử dụng code |
+|                     | `extends`  | `implements` | `with`           |
+| ------------------- | ---------- | ------------ | ---------------- |
+| Số lượng            | 1          | Nhiều        | Nhiều            |
+| Kế thừa code        | Có         | Không        | Có               |
+| Kế thừa constructor | Có         | Không        | Không            |
+| Mục đích            | Chuyên hóa | Cam kết API  | Tái sử dụng code |

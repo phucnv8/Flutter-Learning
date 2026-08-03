@@ -39,12 +39,12 @@ Nếu bạn thêm `class Pentagon extends Shape` trong file, compiler **ngay l�
 
 ### 21.3 Sealed Class vs Abstract Class
 
-| | `abstract class` | `sealed class` |
-|---|---|---|
-| Extend ở file khác | Cho phép | **Không cho phép** |
-| Compiler biết tất cả subclass | Không | **Có** |
-| Switch exhaustiveness | Cần `default` | **Tự động kiểm tra** |
-| Dùng khi nào | Extensible hierarchy | **Closed set of variants** |
+|                               | `abstract class`     | `sealed class`             |
+| ----------------------------- | -------------------- | -------------------------- |
+| Extend ở file khác            | Cho phép             | **Không cho phép**         |
+| Compiler biết tất cả subclass | Không                | **Có**                     |
+| Switch exhaustiveness         | Cần `default`        | **Tự động kiểm tra**       |
+| Dùng khi nào                  | Extensible hierarchy | **Closed set of variants** |
 
 ### 21.4 Sealed Class làm Result Type
 
@@ -67,6 +67,7 @@ class ApiLoading<T> extends ApiResult<T> {
 }
 
 // Xử lý exhaustive — compiler đảm bảo không bỏ sót case nào
+
 Widget buildFromResult(ApiResult<User> result) => switch (result) {
   ApiSuccess(:final data)    => UserCard(data),
   ApiError(:final message)   => ErrorWidget(message),
